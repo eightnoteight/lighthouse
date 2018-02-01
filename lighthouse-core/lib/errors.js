@@ -33,8 +33,8 @@ class LighthouseError extends Error {
    * @param {!LH.LighthouseError} err
    */
   static isPageLoadError(err) {
-    return err.code === errors.NO_DOCUMENT_REQUEST.code ||
-      err.code === errors.FAILED_DOCUMENT_REQUEST.code;
+    return err.code === ERRORS.NO_DOCUMENT_REQUEST.code ||
+      err.code === ERRORS.FAILED_DOCUMENT_REQUEST.code;
   }
 
   /**
@@ -43,6 +43,9 @@ class LighthouseError extends Error {
    * @return {!Error|LighthouseError}
    */
   static fromProtocolMessage(method, protocolError) {
+    // extract all errors with a regex pattern to match against.
+    const protocolErrors = Object.keys(ERRORS).filter(k => ERRORS[k].pattern).map(k => ERRORS[k]);
+    // if we find one, use the friendly LighthouseError definition
     const matchedErrorDefinition = protocolErrors.find(e => e.pattern.test(protocolError.message));
     if (matchedErrorDefinition) {
       return new LighthouseError(matchedErrorDefinition, {
@@ -51,6 +54,7 @@ class LighthouseError extends Error {
       });
     }
 
+    // otherwise fallback to building a generic Error
     let errMsg = `(${method}): ${protocolError.message}`;
     if (protocolError.data) errMsg += ` (${protocolError.data})`;
     const error = new Error(`Protocol error ${errMsg}`);
@@ -58,7 +62,7 @@ class LighthouseError extends Error {
   }
 }
 
-const errors = {
+const ERRORS = {
   // Screenshot/speedline errors
   NO_SPEEDLINE_FRAMES: {message: strings.didntCollectScreenshots},
   SPEEDINDEX_OF_ZERO: {message: strings.didntCollectScreenshots},
@@ -86,10 +90,7 @@ const errors = {
   READ_FAILED: {message: strings.internalChromeError, pattern: /Read failed/},
 };
 
-const protocolErrors = Object.keys(errors).filter(k => errors[k].pattern).map(k => errors[k]);
-
-Object.keys(errors).forEach(code => errors[code].code = code);
-
-LighthouseError.errors = errors;
+Object.keys(ERRORS).forEach(code => ERRORS[code].code = code);
+LighthouseError.errors = ERRORS;
 module.exports = LighthouseError;
 
